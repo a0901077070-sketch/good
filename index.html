@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>AdFlow Pro | 智慧排程中心</title>
+
+  <link
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    rel="stylesheet"
+  />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Inter:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="./css/style.css" />
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <div class="sidebar" id="sidebar">
+      <div class="brand">
+        <i class="fas fa-layer-group"></i>
+        <span>AdFlow Pro</span>
+      </div>
+
+      <div class="nav-item active">
+        <i class="fas fa-chart-pie"></i>
+        <span>儀表板</span>
+      </div>
+
+      <div class="sidebar-section-title">資料管理</div>
+
+      <div class="nav-item" id="backup-btn">
+        <i class="fas fa-download"></i>
+        <span>匯出備份 (JSON)</span>
+      </div>
+
+      <div class="nav-item" id="import-btn">
+        <i class="fas fa-upload"></i>
+        <span>匯入資料</span>
+      </div>
+
+      <div class="nav-item" id="excel-btn">
+        <i class="fas fa-file-excel"></i>
+        <span>匯出 Excel</span>
+      </div>
+
+      <div class="nav-item" id="reminder-btn">
+        <i class="fas fa-bell"></i>
+        <span>查看提醒</span>
+      </div>
+
+      <div class="toggle-btn" id="toggle-sidebar-btn">
+        <i class="fas fa-chevron-left"></i>
+      </div>
+    </div>
+
+    <div class="main-content">
+      <div class="top-bar">
+        <div style="display:flex; align-items:center;">
+          <i
+            class="fas fa-bars mobile-toggle"
+            style="color:var(--text-main)"
+            id="mobile-toggle-btn"
+          ></i>
+          <div class="page-title">
+            <h1>專案排程中心</h1>
+            <p>資料即時儲存於您的瀏覽器中，安全且快速。</p>
+          </div>
+        </div>
+        <div class="data-badge">
+          <i class="fas fa-database"></i> 本機儲存模式
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-head">
+            <span class="stat-title">總專案數</span>
+            <div class="stat-icon stat-icon-primary">
+              <i class="fas fa-folder"></i>
+            </div>
+          </div>
+          <div class="stat-value" id="stat-total">0</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-head">
+            <span class="stat-title">進行中 / 待辦</span>
+            <div class="stat-icon stat-icon-warning">
+              <i class="fas fa-clock"></i>
+            </div>
+          </div>
+          <div class="stat-value" id="stat-pending">0</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-head">
+            <span class="stat-title">已完成歸檔</span>
+            <div class="stat-icon stat-icon-success">
+              <i class="fas fa-check"></i>
+            </div>
+          </div>
+          <div class="stat-value" id="stat-completed">0</div>
+        </div>
+      </div>
+
+      <div class="content-surface">
+        <div class="toolbar">
+          <div class="input-group">
+            <i class="fas fa-search"></i>
+            <input
+              type="text"
+              class="modern-input"
+              id="search-client"
+              placeholder="搜尋客戶名稱、類別、備註、版位、款式..."
+            />
+          </div>
+
+          <div class="date-range">
+            <span class="date-range-label">見刊區間</span>
+            <input type="date" id="start-date" />
+            <span class="date-divider">|</span>
+            <input type="date" id="end-date" />
+          </div>
+
+          <button class="btn btn-secondary" type="button" id="clear-filters-btn">
+            <i class="fas fa-rotate-left"></i> 清除篩選
+          </button>
+
+          <button class="btn btn-primary toolbar-add-btn" type="button" id="open-add-modal-btn">
+            <i class="fas fa-plus"></i> 新增專案
+          </button>
+        </div>
+
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th class="sticky-col-header" width="260px">專案資訊 / 進度</th>
+                <th width="100px">類別</th>
+                <th width="125px">進檔日</th>
+                <th width="125px">送審日</th>
+                <th width="125px">發包日</th>
+                <th width="125px">見刊日</th>
+                <th width="125px">下刊日</th>
+                <th width="60px" class="table-center">回簽</th>
+                <th width="60px" class="table-center">送審</th>
+                <th width="60px" class="table-center">發包</th>
+                <th width="200px">備註</th>
+                <th width="96px" class="table-center">操作</th>
+              </tr>
+            </thead>
+            <tbody id="schedule-table-body"></tbody>
+          </table>
+
+          <div id="empty-state" class="empty-state" style="display:none;">
+            <i class="fas fa-inbox empty-icon"></i>
+            <p>目前沒有相符的專案資料</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="history-toggle-wrap">
+        <button class="btn btn-secondary" id="toggle-history-btn">
+          <i class="fas fa-history"></i> 查看已完成專案
+        </button>
+      </div>
+
+      <div class="content-surface completed-surface" id="completed-section" style="display:none;">
+        <div class="toolbar toolbar-soft">
+          <span class="archive-title">
+            <i class="fas fa-archive"></i> 歸檔記錄
+          </span>
+        </div>
+
+        <div class="table-wrapper">
+          <table id="completed-table">
+            <thead>
+              <tr>
+                <th class="sticky-col-header" width="240px">專案資訊</th>
+                <th width="120px">類別</th>
+                <th width="120px">見刊日</th>
+                <th width="120px">下刊日</th>
+                <th>備註</th>
+                <th width="120px" class="table-center">操作</th>
+              </tr>
+            </thead>
+            <tbody id="completed-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <input type="file" id="import-file" accept=".json,application/json" class="hidden-file-input" />
+  </div>
+
+  <div class="modal-overlay" id="add-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="project-modal-title">新增專案排程</h3>
+        <i class="fas fa-times modal-close" id="close-add-modal-btn"></i>
+      </div>
+
+      <div class="form-block">
+        <label class="field-label">客戶名稱</label>
+        <input type="text" id="modal-client" class="modern-input no-icon" placeholder="輸入客戶名稱" />
+      </div>
+
+      <div class="form-block">
+        <label class="field-label">廣告類別</label>
+        <select id="modal-type" class="modern-input no-icon">
+          <option value="燈片">燈片</option>
+          <option value="長廊">長廊</option>
+          <option value="創意街道">創意街道</option>
+        </select>
+      </div>
+
+      <div class="form-block">
+        <label class="field-label">版位與款式</label>
+        <div id="placement-list" class="placement-list"></div>
+
+        <button type="button" class="btn btn-secondary add-placement-btn" id="add-placement-btn">
+          <i class="fas fa-plus"></i> 新增一列版位 / 款式
+        </button>
+      </div>
+
+      <div class="form-grid-two form-gap-bottom-sm">
+        <div>
+          <label class="field-label">見刊日</label>
+          <input type="date" id="modal-publish" class="modern-input no-icon" />
+        </div>
+        <div>
+          <label class="field-label">下刊日</label>
+          <input type="date" id="modal-end" class="modern-input no-icon" />
+        </div>
+      </div>
+
+      <div class="helper-text">建立後會自動回推進檔日、送審日、發包日。</div>
+
+      <button class="btn btn-primary modal-submit-btn" id="confirm-add-btn">
+        儲存專案
+      </button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="checklist-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title-with-icon">
+            <i class="fas fa-clipboard-check modal-title-icon"></i> 檢核確認
+          </h3>
+          <span id="checklist-project-title" class="modal-subtitle"></span>
+        </div>
+        <i class="fas fa-times modal-close" id="close-checklist-modal-btn"></i>
+      </div>
+
+      <div id="checklist-content" class="checklist-content"></div>
+
+      <div class="modal-footer-top">
+        <button class="btn btn-primary modal-submit-btn" id="checklist-close-btn">
+          關閉
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="today-reminder-modal">
+    <div class="modal reminder-modal">
+      <div class="reminder-icon-wrap">
+        <i class="fas fa-bell"></i>
+      </div>
+
+      <h3 id="reminder-title" class="reminder-title">待辦事項提醒</h3>
+
+      <div id="today-tasks-container" class="reminder-container">
+        <ul id="today-tasks-list" class="reminder-list"></ul>
+        <div id="no-tasks-msg" class="no-task-msg">
+          <i class="far fa-smile no-task-icon"></i> 目前無須處理項目
+        </div>
+      </div>
+
+      <button class="btn btn-primary modal-submit-btn" id="close-reminder-modal-btn">
+        我知道了
+      </button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">
+    <i class="fas fa-info-circle"></i>
+    <span id="toast-msg">訊息提示</span>
+  </div>
+
+  <script src="./js/app.js"></script>
+</body>
+</html>
